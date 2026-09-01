@@ -1,0 +1,41 @@
+# Secrets
+.env
+secrets/.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Generated reports & output
+output/
+*.docx
+~$*
+
+# Tracked templates (exceptions to *.docx)
+!template.docx
+!region_template.docx
+
+# Generated batch/region splits (recreated by split_bridges.py / split_by_region.py)
+batches/
+regions/
+
+# Runtime logs & artifacts
+*.log
+log.txt
+non_celsius_sensors.txt
+
+# Internal notes / scratch data
+pilot.txt
+all_bridges_raw.txt
+Diagnostic_Report_Server_Issues.txt
+
+# Large unused assets
+ellada2/*.pdf
+
+# OS / editors
+Thumbs.db
+.DS_Store
+.idea/
+.vscode/
