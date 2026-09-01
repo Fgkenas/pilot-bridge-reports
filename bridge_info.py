@@ -8,6 +8,8 @@ docx placeholder replacement.
 
 from __future__ import annotations
 
+from resensys_hosts import BRIDGES_API_URL, PORTAL_LOGIN_URL, PORTAL_REGISTRATION_URL, PORTAL_SITENAME_URL, portal_graph_referer
+
 import json
 import os
 import re
@@ -133,7 +135,7 @@ def _apply_pilot_date_overrides(data: Dict[str, Any], code_name: str) -> None:
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
-API_URL = "https://lms4.globiled.com/Bridges_api/bridges_api_new.php"
+API_URL = BRIDGES_API_URL
 
 # ---------------------------------------------------------------------------
 # Region code prefixes recognised in code_names like "ΔΜΑ_ΒΕΘ15α_Γ002".
@@ -146,8 +148,8 @@ KNOWN_REGION_CODES = {
     "ΔΜΑ", "ΔΕ", "ΗΠΕ",
 }
 
-RESENSYS_LOGIN_URL = "https://greece.resensys.cloud/login"
-RESENSYS_REGISTRATION_URL = "https://greece.resensys.cloud/api/v2/registration2"
+RESENSYS_LOGIN_URL = PORTAL_LOGIN_URL
+RESENSYS_REGISTRATION_URL = PORTAL_REGISTRATION_URL
 
 # Credentials come from secrets/.env (never hardcode them)
 _resensys_env = Path(__file__).parent / "secrets" / ".env"
@@ -236,7 +238,7 @@ def resensys_login(
             m = _re.search(r'name="csrfmiddlewaretoken"\s+value="([^"]+)"', r0.text)
             csrf_form_token = m.group(1) if m else csrftoken_cookie
             # Step 2: POST to /login/ using form token
-            login_post_url = "https://greece.resensys.cloud/login/"
+            login_post_url = PORTAL_LOGIN_URL + "/"
             r1 = session.post(
                 login_post_url,
                 data={"username": username, "password": password, "csrfmiddlewaretoken": csrf_form_token, "next": "/"},
@@ -271,14 +273,14 @@ def get_site_name(
     timeout: int = 30,
 ) -> Dict[str, Any]:
     """POST to Resensys ajax/getSiteName/ and return parsed JSON."""
-    url = "https://greece.resensys.cloud/ajax/getSiteName/"
+    url = PORTAL_SITENAME_URL
     r = session.post(
         url,
         data={"username": username, "SID": site_id},
         headers={
             "X-CSRFToken": csrftoken,
             "X-Requested-With": "XMLHttpRequest",
-            "Referer": f"https://greece.resensys.cloud/graph/{site_id}/",
+            "Referer": portal_graph_referer(site_id),
         },
         timeout=timeout,
         verify=False,

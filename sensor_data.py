@@ -13,6 +13,8 @@ Usage:
 
 from __future__ import annotations
 
+from resensys_hosts import API_ROOT
+
 import os
 from datetime import datetime as _dt
 from pathlib import Path
@@ -35,9 +37,9 @@ secrets_dir = Path(__file__).parent / "secrets"
 load_dotenv(secrets_dir / ".env")
 API_KEY = os.getenv("API_KEY")
 
-RESENSYS_API_ROOT = "https://greece-api.resensys.cloud/api/v3"
+RESENSYS_API_ROOT = API_ROOT
 
-from temp_utils import detect_and_convert_celsius
+from temp_utils import detect_and_convert_celsius, response_value_field
 
 # ---------------------------------------------------------------------------
 # Shared HTTP session
@@ -346,7 +348,9 @@ def _temperature_compensate_strain(strain_resp, temp_resp, *, e0=None,
     if s.empty or t.empty:
         return None, {"ok": False, "reason": "No valid numeric data after cleaning"}
     t_renamed = t.rename(columns={"temp": "value"})
-    t_renamed, _ = detect_and_convert_celsius(t_renamed, sensor_name=sensor_name, bridge_name=bridge_name)
+    t_renamed, _ = detect_and_convert_celsius(
+        t_renamed, sensor_name=sensor_name, bridge_name=bridge_name,
+        value_field=response_value_field(temp_resp))
     t["temp"] = t_renamed["value"]
     if e0 is not None:
         s["strain"] = s["strain"] - e0
@@ -695,7 +699,9 @@ def process_strain_data(
             _create_temperature_chart(t_df_dt, name, str(graphs_dir / f"{name}_temperature.png"))
 
             t_df_c = t_df.copy()
-            t_df_c, _ = detect_and_convert_celsius(t_df_c, sensor_name=name, bridge_name=graphs_dir.name)
+            t_df_c, _ = detect_and_convert_celsius(
+                t_df_c, sensor_name=name, bridge_name=graphs_dir.name,
+                value_field=response_value_field(temp_resp))
             mean_t = t_df_c["value"].mean()
             min_t = t_df_c["value"].min()
             max_t = t_df_c["value"].max()

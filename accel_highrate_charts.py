@@ -10,6 +10,8 @@ Kept for reference or standalone use only.
 """
 from __future__ import annotations
 
+from resensys_hosts import API_ROOT
+
 import json
 import os
 import sys
@@ -49,7 +51,7 @@ except ImportError:
 secrets_dir = Path(__file__).parent / "secrets"
 load_dotenv(secrets_dir / ".env")
 API_KEY = os.getenv("API_KEY")
-RESENSYS_API_ROOT = "https://greece-api.resensys.cloud/api/v3"
+RESENSYS_API_ROOT = API_ROOT
 
 # Shared session for HTTP keep-alive (connection pooling)
 _hpa_session = requests.Session()

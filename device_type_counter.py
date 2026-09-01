@@ -5,6 +5,8 @@ Uses Resensys API to get accurate device type information and count
 sensors by type for report generation.
 """
 
+from resensys_hosts import API_ROOT
+
 import os
 import requests
 import urllib3
@@ -42,7 +44,7 @@ def get_device_type(did: str) -> Dict:
     payload = {"did": did}
     try:
         r = requests.post(
-            "https://greece-api.resensys.cloud/api/v3/device_type",
+            f"{API_ROOT}/device_type",
             headers=resensys_header,
             json=payload,
             timeout=15,

@@ -9,6 +9,8 @@ Kept for reference or standalone use only.
 """
 from __future__ import annotations
 
+from resensys_hosts import PORTAL_BASE, PORTAL_PLOT_URL, portal_graph_referer
+
 import time
 import warnings
 from datetime import datetime, timedelta
@@ -37,7 +39,7 @@ def fetch_acceleration_axis(
     if not start_date or not end_date:
         raise ValueError("start_date and end_date are required (Pilot_Date_Start / Pilot_Date_Finish)")
     """Fetch acceleration data from Resensys API for a specific axis (HPA-X, HPA-Y, HPA-Z)."""
-    url = "https://greece.resensys.cloud/ajax/plot_if_active/"
+    url = PORTAL_PLOT_URL
 
     start_dt = datetime.strptime(start_date, "%Y-%m-%d")
     end_dt = datetime.strptime(end_date, "%Y-%m-%d")
@@ -71,8 +73,8 @@ def fetch_acceleration_axis(
     headers = {
         'X-CSRFToken': csrf_token,
         'X-Requested-With': 'XMLHttpRequest',
-        'Referer': f'https://greece.resensys.cloud/graph/{site_id}/',
-        'Origin': 'https://greece.resensys.cloud',
+        'Referer': portal_graph_referer(site_id),
+        'Origin': PORTAL_BASE,
         'Accept': 'application/json, text/javascript, */*; q=0.01'
     }
 

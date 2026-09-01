@@ -10,6 +10,8 @@ Kept for reference or standalone use only.
 """
 from __future__ import annotations
 
+from resensys_hosts import API_ROOT
+
 import json
 import os
 from pathlib import Path
@@ -18,7 +20,7 @@ from api_rate_limiter import acquire_slot, release_slot, wait_for_gap
 
 import api_bytes_tracker
 
-from temp_utils import detect_and_convert_celsius
+from temp_utils import detect_and_convert_celsius, response_value_field
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
@@ -36,7 +38,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 secrets_dir = Path(__file__).parent / "secrets"
 load_dotenv(secrets_dir / ".env")
 API_KEY = os.getenv("API_KEY")
-RESENSYS_API_ROOT = "https://greece-api.resensys.cloud/api/v3"
+RESENSYS_API_ROOT = API_ROOT
 
 # Shared session for HTTP keep-alive (connection pooling)
 _http_session = requests.Session()
@@ -367,6 +369,7 @@ def _temperature_compensate_strain(
         t_renamed,
         sensor_name=sensor_name,
         bridge_name=bridge_name,
+        value_field=response_value_field(temp_resp),
     )
     t["temp"] = t_renamed["value"]
 

@@ -17,6 +17,8 @@ Usage:
 """
 from __future__ import annotations
 
+from resensys_hosts import BRIDGES_API_URL
+
 import argparse
 import re
 import shutil
@@ -51,7 +53,7 @@ from bridge_info import fetch_bridge
 
 PLACEHOLDER_RE = re.compile(r"\{([A-Z0-9_]+)\}")
 
-REGION_API_URL = "https://lms4.globiled.com/Bridges_api/bridges_api_new.php"
+REGION_API_URL = BRIDGES_API_URL
 
 # ---------------------------------------------------------------------------
 # Logo mapping (from logos/logos.txt)

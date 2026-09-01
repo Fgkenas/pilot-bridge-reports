@@ -7,6 +7,8 @@ and avoids duplicate data fetching.
 
 Kept for reference or standalone use only.
 """
+
+from resensys_hosts import BRIDGES_API_URL, PORTAL_BASE, PORTAL_PLOT_URL, portal_graph_referer
 import re
 import threading
 import time
@@ -37,8 +39,8 @@ class DeformationReportSection:
             bridge_name = ''
         print(f"Bridge name: {bridge_name}")
         self.bridge_name = bridge_name
-        self.api_url = f"https://lms4.globiled.com/Bridges_api/bridges_api_new.php?code_name={bridge_name}"
-        self.resensys_url = "https://greece.resensys.cloud/ajax/plot_if_active/"
+        self.api_url = f"{BRIDGES_API_URL}?code_name={bridge_name}"
+        self.resensys_url = PORTAL_PLOT_URL
         self.sensor_data = []
         self.stats_data = []
         self.acceleration_stats_data = []
@@ -169,8 +171,8 @@ class DeformationReportSection:
             headers = {
                 'X-CSRFToken': self.csrf_token,
                 'X-Requested-With': 'XMLHttpRequest',
-                'Referer': f'https://greece.resensys.cloud/graph/{site_id}/',
-                'Origin': 'https://greece.resensys.cloud',
+                'Referer': portal_graph_referer(site_id),
+                'Origin': PORTAL_BASE,
                 'Accept': 'application/json, text/javascript, */*; q=0.01'
             }
             
@@ -307,6 +309,10 @@ class DeformationReportSection:
                     df_temp,
                     sensor_name=sensor.get("code_name", ""),
                     bridge_name=self.bridge_name,
+                    # This fetch requests unit="F" a few lines up and the
+                    # endpoint answers in Fahrenheit regardless, so the unit
+                    # is known here -- no need to infer it from the values.
+                    value_field="Internal Temperature(F)",
                 )
                 temp_stats = self.calculate_stats(df_temp_c)
                 if temp_stats:

@@ -5,6 +5,8 @@ a blue line chart as {sensor_name}_wls.png in the graphs directory.
 """
 from __future__ import annotations
 
+from resensys_hosts import PORTAL_BASE, PORTAL_PLOT_URL, portal_graph_referer
+
 import json
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -17,7 +19,7 @@ import requests
 from api_rate_limiter import acquire_slot, release_slot, wait_for_gap
 
 
-RESENSYS_PLOT_URL = "https://greece.resensys.cloud/ajax/plot_if_active/"
+RESENSYS_PLOT_URL = PORTAL_PLOT_URL
 USERNAME = "Vassilis"
 
 
@@ -65,8 +67,8 @@ def _fetch_wls_data(sensor: dict, session: requests.Session, csrftoken: str) -> 
     headers = {
         "X-CSRFToken": csrftoken,
         "X-Requested-With": "XMLHttpRequest",
-        "Referer": f"https://greece.resensys.cloud/graph/{site_id}/",
-        "Origin": "https://greece.resensys.cloud",
+        "Referer": portal_graph_referer(site_id),
+        "Origin": PORTAL_BASE,
         "Accept": "application/json, text/javascript, */*; q=0.01",
     }
 
