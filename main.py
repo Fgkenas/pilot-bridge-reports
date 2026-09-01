@@ -623,6 +623,7 @@ def generate_bridge_docx(
     session = None,
     csrftoken: str = "",
     region_code: str = "",
+    date_range: tuple[str, str] | None = None,
 ) -> Path | None:
     """Generate a single per-bridge .docx report.
 
@@ -631,6 +632,13 @@ def generate_bridge_docx(
     If session/csrftoken are provided, reuse them for WLS charts (avoids re-login).
     If region_code is provided, save to out_dir/region_code/code_name.docx.
     Returns the output path, or None on failure.
+
+    date_range, as ('YYYY-MM-DD', 'YYYY-MM-DD'), is the period to report on:
+    it overrides the Pilot_Date_Start/Finish the bridge API carries per
+    sensor, and governs every section that fetches measurements. That is
+    what lets a caller (the Smart Bridges GUI) choose the window instead of
+    always getting the pilot campaign. Leave it None for the original
+    behaviour -- the pilot dates, exactly as before.
     """
     out_dir.mkdir(parents=True, exist_ok=True)
     counter = Counter()
@@ -689,12 +697,22 @@ def generate_bridge_docx(
     # Unified sensor data fetching via REST API (single pass, no duplicates)
     sensor_result: dict = {}
     try:
-        sensor_result = process_all_sensor_data(all_sensors, graphs_dir)
+        if date_range and date_range[0] and date_range[1]:
+            sensor_result = process_all_sensor_data(
+                all_sensors, graphs_dir, date_range[0], date_range[1])
+        else:
+            sensor_result = process_all_sensor_data(all_sensors, graphs_dir)
     except Exception as exc:
         print(f"     ! sensor data processing failed: {exc}")
 
     pilot_start = sensor_result.get("pilot_start", "")
     pilot_finish = sensor_result.get("pilot_finish", "")
+    # An explicit window wins outright, and is applied even when the fetch
+    # above failed -- otherwise one failing sensor family would silently
+    # drop the whole report back to "no dates" and skip every later section.
+    if date_range and date_range[0] and date_range[1]:
+        pilot_start, pilot_finish = date_range
+        print(f"     Requested dates: {pilot_start} -> {pilot_finish} (overriding pilot dates)")
     # Fallback: extract from sensor metadata if process_all_sensor_data failed
     if not pilot_finish:
         for s in all_sensors:
