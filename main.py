@@ -44,6 +44,8 @@ from battery_checker import check_battery
 from signal_checker import check_signal
 from strain_checker import check_strain
 from hpa_checker import check_hpa
+from status_client import status_cells
+from report_config import REPORT_OUTPUT_DIR
 from charge_checker import check_charge
 from wls_checker import check_wls
 from wls_raw_charts import generate_wls_charts
@@ -52,7 +54,7 @@ import api_bytes_tracker
 
 PLACEHOLDER_RE = re.compile(r"\{([A-Z0-9_]+)\}")
 
-PILOT_REPORTS_DIR = Path("C:/Users/fgkenas/Globiled/Marina Bagourdi - Μεταβλητές/Πιλοτικές Αναφορές")
+PILOT_REPORTS_DIR = REPORT_OUTPUT_DIR
 
 ELLADA2_LOGO_PATH = Path(__file__).parent / "ellada2" / "Greece 2.0_NextGeneration_gr 1.png"
 
@@ -1836,34 +1838,16 @@ def add_battery_section_to_docx(
 
             if device_id:
                 result = battery_results.get(device_id, {})
-                if result.get("ok") and result.get("metrics", {}).get("Battery Voltage"):
-                    voltage = result.get("metrics", {}).get("Battery Voltage", "")
-                    status = "ΚΑΛΗ"
-                    _explain = result.get("explain", "")
-                    _upper_words = re.findall(r'\b[Α-ΩΆΈΉΊΌΎΏΪΫ]{2,}\b', _explain)
-                    comments = " ".join(_upper_words) if _upper_words else _explain
-                    latest_time = result.get("latest_time", "")
-                elif result.get("ok"):
-                    voltage = "—"
-                    status = "ΚΑΛΗ"
-                    comments = "Η μπαταρία είναι εντός ορίων (χωρίς ακριβή τιμή)"
-                    latest_time = result.get("latest_time", "")
-                else:
-                    voltage = "—"
-                    status = "N/A"
-                    comments = result.get("error", "Σφάλμα ελέγχου")
-                    latest_time = ""
+                voltage, status, comments, latest_time = status_cells(result, "Battery Voltage", "Αδύναμη")
+
             else:
                 voltage = ""
                 status = "N/A"
                 comments = "Δεν υπάρχει device_id"
                 latest_time = ""
 
-            # Use pilot finish date at 14:00
-            if pilot_finish:
-                latest_time = _format_date_el(pilot_finish) + " 14:00"
-            else:
-                latest_time = _format_date_el(latest_time) or datetime.now().strftime("%d/%m/%Y 14:00")
+            # Preserve the actual reading time; never invent a historical time.
+            latest_time = _format_date_el(latest_time)
 
             # Fallback to device_id if sensor_name is still empty
             if not sensor_name:
@@ -2228,33 +2212,23 @@ def add_hpa_section_to_docx(
                     v14 = hpa_14h[sensor_name]
                     hpa_value = v14.get("hpa", "")
                     latest_time = v14.get("timestamp", "")
-                    status = "Καλή"
-                    comments = f"Μέτρηση 14:00 (raw)"
+                    status = "N/A"
+                    comments = "Ιστορική μέτρηση κοντά στις 14:00 (raw)· δεν έγινε αξιολόγηση ποιότητας"
                 else:
-                    result = hpa_results.get(device_id, {}) if not use_14h else {}
-                    if result.get("ok"):
-                        hpa_value = result.get("metrics", {}).get("HPA", "")
-                        status = "Καλή"
-                        _explain = result.get("explain", "")
-                        _upper_words = re.findall(r'\b[Α-ΩΆΈΉΊΌΎΏΪΫ]{2,}\b', _explain)
-                        comments = " ".join(_upper_words) if _upper_words else _explain
-                        latest_time = result.get("latest_time", "")
-                    else:
-                        hpa_value = ""
-                        status = "N/A"
-                        comments = result.get("error", "Σφάλμα ελέγχου")
-                        latest_time = ""
+                    result = hpa_results.get(device_id, {}) if not use_14h else {
+                        "fetch_ok": True, "verdict": None, "metrics": {},
+                        "reason": "Δεν βρέθηκε ιστορική μέτρηση κοντά στις 14:00 για τον αισθητήρα"
+                    }
+                    hpa_value, status, comments, latest_time = status_cells(result, "HPA")
+
             else:
                 hpa_value = ""
                 status = "N/A"
                 comments = "Δεν υπάρχει device_id"
                 latest_time = ""
 
-            # Use pilot finish date at 14:00
-            if pilot_finish:
-                latest_time = _format_date_el(pilot_finish) + " 14:00"
-            else:
-                latest_time = _format_date_el(latest_time) or datetime.now().strftime("%d/%m/%Y 14:00")
+            # Keep the actual sample time, including historical/raw samples.
+            latest_time = _format_date_el(latest_time)
 
             # Fallback to device_id if sensor_name is still empty
             if not sensor_name:
@@ -2265,7 +2239,7 @@ def add_hpa_section_to_docx(
             row_cells[1].text = site_id
             row_cells[2].text = latest_time
             # Ensure hpa is rounded to 3 decimals
-            if hpa_value and isinstance(hpa_value, (int, float)):
+            if isinstance(hpa_value, (int, float)):
                 hpa_value = f"{float(hpa_value):.3f}"
             row_cells[3].text = str(hpa_value) if hpa_value else ""
             row_cells[4].text = status

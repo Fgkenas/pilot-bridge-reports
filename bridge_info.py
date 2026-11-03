@@ -8,6 +8,8 @@ docx placeholder replacement.
 
 from __future__ import annotations
 
+from report_config import PORTAL_ROOT, BRIDGES_URL
+
 import json
 import os
 import re
@@ -108,6 +110,9 @@ _MANUAL_MONTHLY_DATE_OVERRIDES: dict[str, str] = {
 
 
 def _apply_monthly_date_overrides(data: Dict[str, Any], code_name: str) -> None:
+    # Corrected Bridges API is authoritative; legacy overrides require explicit opt-in.
+    if os.getenv("APPLY_LEGACY_DATE_OVERRIDES", "0") != "1":
+        return
     if code_name not in _MANUAL_MONTHLY_DATE_OVERRIDES:
         return
     new_date = _MANUAL_MONTHLY_DATE_OVERRIDES[code_name]
@@ -119,6 +124,9 @@ def _apply_monthly_date_overrides(data: Dict[str, Any], code_name: str) -> None:
 
 
 def _apply_pilot_date_overrides(data: Dict[str, Any], code_name: str) -> None:
+    # Corrected Bridges API is authoritative; legacy overrides require explicit opt-in.
+    if os.getenv("APPLY_LEGACY_DATE_OVERRIDES", "0") != "1":
+        return
     if code_name not in _MANUAL_PILOT_DATE_OVERRIDES:
         return
     new_start, new_finish = _MANUAL_PILOT_DATE_OVERRIDES[code_name]
@@ -133,7 +141,7 @@ def _apply_pilot_date_overrides(data: Dict[str, Any], code_name: str) -> None:
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
-API_URL = "https://lms4.globiled.com/Bridges_api/bridges_api_new.php"
+API_URL = BRIDGES_URL
 
 # ---------------------------------------------------------------------------
 # Region code prefixes recognised in code_names like "ΔΜΑ_ΒΕΘ15α_Γ002".
@@ -146,8 +154,8 @@ KNOWN_REGION_CODES = {
     "ΔΜΑ", "ΔΕ", "ΗΠΕ",
 }
 
-RESENSYS_LOGIN_URL = "https://greece.resensys.cloud/login"
-RESENSYS_REGISTRATION_URL = "https://greece.resensys.cloud/api/v2/registration2"
+RESENSYS_LOGIN_URL = PORTAL_ROOT + '/login'
+RESENSYS_REGISTRATION_URL = PORTAL_ROOT + '/api/v2/registration2'
 
 # Credentials come from secrets/.env (never hardcode them)
 _resensys_env = Path(__file__).parent / "secrets" / ".env"
@@ -236,7 +244,7 @@ def resensys_login(
             m = _re.search(r'name="csrfmiddlewaretoken"\s+value="([^"]+)"', r0.text)
             csrf_form_token = m.group(1) if m else csrftoken_cookie
             # Step 2: POST to /login/ using form token
-            login_post_url = "https://greece.resensys.cloud/login/"
+            login_post_url = PORTAL_ROOT + '/login/'
             r1 = session.post(
                 login_post_url,
                 data={"username": username, "password": password, "csrfmiddlewaretoken": csrf_form_token, "next": "/"},
@@ -271,14 +279,14 @@ def get_site_name(
     timeout: int = 30,
 ) -> Dict[str, Any]:
     """POST to Resensys ajax/getSiteName/ and return parsed JSON."""
-    url = "https://greece.resensys.cloud/ajax/getSiteName/"
+    url = PORTAL_ROOT + '/ajax/getSiteName/'
     r = session.post(
         url,
         data={"username": username, "SID": site_id},
         headers={
             "X-CSRFToken": csrftoken,
             "X-Requested-With": "XMLHttpRequest",
-            "Referer": f"https://greece.resensys.cloud/graph/{site_id}/",
+            "Referer": f"{PORTAL_ROOT}/graph/{site_id}/",
         },
         timeout=timeout,
         verify=False,
