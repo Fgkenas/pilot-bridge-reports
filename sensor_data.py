@@ -33,9 +33,9 @@ from dotenv import load_dotenv
 
 secrets_dir = Path(__file__).parent / "secrets"
 load_dotenv(secrets_dir / ".env")
-API_KEY = os.getenv("API_KEY")
+from report_config import API_KEY
 
-RESENSYS_API_ROOT = "https://greece-api.resensys.cloud/api/v3"
+from report_config import API_ROOT as RESENSYS_API_ROOT
 
 from temp_utils import detect_and_convert_celsius
 
@@ -124,8 +124,11 @@ def _fetch_temperature_data(sid: str, did: str, t_start: str, t_end: str) -> dic
 def _fetch_hpa_data(sid: str, did: str, t_start: str, t_end: str, axis: str = "HPA-Z") -> dict:
     import json
     url = f"{RESENSYS_API_ROOT}/data_acquire"
+    formats = {"HPA-X": "32800", "HPA-Y": "32900", "HPA-Z": "33000"}
+    if axis not in formats:
+        raise ValueError("Unsupported acceleration axis")
     payload = json.dumps({
-        "SID": sid, "DID": did, "DF": "33000", "Q": axis, "U": "mg",
+        "SID": sid, "DID": did, "DF": formats[axis], "Q": axis, "U": "mg",
         "T_start": t_start, "T_end": t_end, "Sample_int": "H1",
     })
     return _fetch_with_retry(url, payload,

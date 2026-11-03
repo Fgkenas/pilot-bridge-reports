@@ -4,14 +4,15 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 import requests
+from report_requests import post_status
 from utils import round_value as _round_value
 
 # Load API key from secrets/.env
 secrets_dir = Path(__file__).parent / "secrets"
 load_dotenv(secrets_dir / ".env")
-API_KEY = os.getenv("API_KEY")
+from report_config import API_KEY
 
-RESENSYS_API_ROOT = "https://greece-api.resensys.cloud/api/v3"
+from report_config import API_ROOT as RESENSYS_API_ROOT
 
 
 def check_wls(did: str) -> dict:
@@ -31,7 +32,7 @@ def check_wls(did: str) -> dict:
     for attempt in range(max_attempts):
         try:
             print(f"Checking WLS for DID: {did}")
-            r = requests.post(
+            r = post_status(
                 f"{RESENSYS_API_ROOT}/wls_status",
                 headers={
                     "X-API-Key": API_KEY,
